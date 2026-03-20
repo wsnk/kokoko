@@ -1,0 +1,16 @@
+[project]
+name = "packing-utils"
+version = "0.1.0"
+description = "Utilities to for uv's pyprojects"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "tomli_w"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["packing_utils"]
