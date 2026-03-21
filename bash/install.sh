@@ -8,7 +8,7 @@ function print_include_script()
     cat - <<EOF
 BASHRC_D="$USER_BASHRC_D"
 if [ -d "\$BASHRC_D" ]; then
-  while IFS= read -r -d '' file; do
+  while read -r file; do
     source "\$file"
   done < <(find "\$BASHRC_D" -type f -name '*.sh' | sort -z)
 fi
