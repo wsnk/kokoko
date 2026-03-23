@@ -7,6 +7,9 @@ from urllib.parse import urlparse, parse_qs
 import tempfile
 import shutil
 import json
+import re
+from packaging.utils import parse_wheel_filename
+
 
 _log = logging.getLogger(__name__)
 
@@ -23,15 +26,29 @@ def err(*args, **kwargs):
     _log.error(*args, **kwargs, stacklevel=2)
 
 
+def normalized_name(name: str) -> str:
+    # see https://packaging.python.org/en/latest/specifications/name-normalization/
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 @dataclass
 class Wheel:
     path: Path
-    name: str
+    name: str  # normalized name
+    version: str = None
+    build: str = None
+    tags: str = None
 
     @classmethod
     def from_path(cls, path: Path):
-        pkg, _ = path.name.split("-", 1)
-        return cls(path=path.resolve(), name=pkg)
+        name, ver, build, tags = parse_wheel_filename(path.name)
+        return cls(
+            path=path.resolve(),
+            name=name,
+            version=ver,
+            build=build,
+            tags=tags
+        )
 
 
 @dataclass
@@ -42,38 +59,6 @@ class LockedPackage:
     version: str
     source: dict
 
-
-
-@dataclass
-class Dependency:
-    name: str
-    extras: list[str]
-    version: str
-    source: dict
-
-    @property
-    def normalized_name(self) -> str:
-        return self.name.lower().replace("-", "_")
-
-    def to_string(self) -> str:
-        extras_str = f"[{','.join(self.extras)}]" if self.extras else ""
-        return f"{self.name}{extras_str}=={self.version}"
-
-    @classmethod
-    def from_string(cls, dep_str: str):
-        # This is a very naive parser and may not cover all cases
-        name_extras_version = dep_str.split(maxsplit=1)[0]  # not fully correct, but OK
-
-        name = name_extras_version.split("==")[0].split(">=")[0].split("<=")[0].split(">")[0].split("<")[0]
-        version = name_extras_version[len(name):].lstrip("=>< ")
-
-        extras = []
-        if "[" in name and "]" in name:
-            name, extras_str = name.split("[", 1)
-            extras_str = extras_str.rstrip("]")
-            extras = [e.strip() for e in extras_str.split(",")]
-
-        return cls(name=name, extras=extras, version=version, source={})
 
 
 

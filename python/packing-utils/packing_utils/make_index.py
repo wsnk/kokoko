@@ -43,17 +43,6 @@ def make_index(dist_dir: Path, out_dir: Path):
     """
     Generate a PEP-503 'simple' index in ./simple that links to ../dist/<file>.
     This layout works with both file:// and http:// URLs.
-
-    Usage:
-    python make_simple_index_for_uv.py
-    Then either:
-    # serve via HTTP (run from the parent dir that contains simple/ and dist/)
-    python -m http.server 8000
-    # use in uv:
-    uv pip install --index http://localhost:8000/simple/ --trusted-host localhost <package>
-
-    Or use local file URL:
-    uv pip install --index file:///ABS/PATH/TO/simple/ <package>
     """
 
     if not dist_dir.exists() or not dist_dir.is_dir():
@@ -63,8 +52,7 @@ def make_index(dist_dir: Path, out_dir: Path):
 
     packages: dict[str, list[Wheel]] = {}
     for wheel in get_wheels(dist_dir):
-        index_pkg_name = normalize(wheel.name)
-        packages.setdefault(index_pkg_name, []).append(wheel)
+        packages.setdefault(wheel.name, []).append(wheel)
     
     dbg("Found %d packages for index", len(packages))
 

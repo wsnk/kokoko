@@ -5,8 +5,17 @@ description = "Utilities to for uv's pyprojects"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "tomli_w"
+    "tomli_w",
+    "packaging",
 ]
+
+[dependency-groups]
+dev = [
+  "pytest >= 8.4",
+]
+
+[project.scripts]
+packing-utils = "packing_utils.__main__:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]

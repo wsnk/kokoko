@@ -2,6 +2,7 @@ from .common import dbg, Uv, Git, Wheel
 from .uv_utils import LockedPackage
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Iterable
 
 
 @dataclass
@@ -10,7 +11,6 @@ class Config:
     lock_file: Path
     dist_dir: Path = Path("./dist")  # directory to store built artifacts
     build_dir: Path = Path(".build")  # temporary directory for building dependencies
-
 
 
 def _build_wheel(project_dir: Path, config: Config) -> Path:    
@@ -51,7 +51,7 @@ def build_packages(pkgs: list[LockedPackage], config: Config) -> list[str]:
         build_dependency(pkg, config)
 
 
-def get_wheels(dist_dir: Path):
+def get_wheels(dist_dir: Path) -> Iterable[Wheel]:
     for p in dist_dir.iterdir():
         if not p.is_file():
             continue
