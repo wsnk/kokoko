@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Config:
     pyproject: Path
     lock_file: Path
@@ -13,7 +13,7 @@ class Config:
     build_dir: Path = Path(".build")  # temporary directory for building dependencies
 
 
-def _build_wheel(project_dir: Path, config: Config) -> Path:    
+def _build_wheel(project_dir: Path, config: Config) -> Path:
     Uv(project_dir).build(config.dist_dir, ["--wheel"])
 
 
@@ -58,3 +58,10 @@ def get_wheels(dist_dir: Path) -> Iterable[Wheel]:
         if not p.name.endswith(".whl"):
             continue
         yield Wheel.from_path(p)
+
+
+def get_wheel(dist_dir: Path, pkg_name: str) -> Wheel:
+    for wheel in get_wheels(dist_dir):
+        if wheel.name == pkg_name:
+            return wheel
+    raise FileNotFoundError(f"Wheel for package '{pkg_name}' not found in '{dist_dir}'")

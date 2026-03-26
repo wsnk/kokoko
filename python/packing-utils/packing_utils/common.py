@@ -2,13 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 import logging
 import subprocess
-from unittest import result
 from urllib.parse import urlparse, parse_qs
-import tempfile
-import shutil
 import json
-import re
-from packaging.utils import parse_wheel_filename
+from packaging.utils import parse_wheel_filename, canonicalize_name
 
 
 _log = logging.getLogger(__name__)
@@ -27,8 +23,9 @@ def err(*args, **kwargs):
 
 
 def normalized_name(name: str) -> str:
+    return canonicalize_name(name)
     # see https://packaging.python.org/en/latest/specifications/name-normalization/
-    return re.sub(r"[-_.]+", "-", name).lower()
+    # return re.sub(r"[-_.]+", "-", name).lower()
 
 
 @dataclass

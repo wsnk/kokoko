@@ -70,5 +70,5 @@ def make_index(dist_dir: Path, out_dir: Path):
     # per-package pages
     for pkg, whls in packages.items():
         make_project_page(out_dir, pkg, whls)
-    
+
     inf("Index generated successfully at '%s': %d packages", out_dir, len(packages))
