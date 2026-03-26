@@ -51,14 +51,13 @@ class Config:
 def sync_bash(rel_index_path, pyproject: PyProject) -> str:
     return f"""\
 #!/bin/bash
+
 set -eo pipefail
 
 BUNDLE_DIR="$(realpath "$(dirname "$0")")"
 cd "$BUNDLE_DIR"
 
-VENV_PATH="${{VENV_PATH:-"$BUNDLE_DIR/.venv"}}"
-
-export VIRTUAL_ENV="$VENV_PATH"
+export VIRTUAL_ENV="${{VENV_PATH:-"$BUNDLE_DIR/.venv"}}"
 echo "Syncing distribution bundle to '$VIRTUAL_ENV'..." >&2
 
 uv sync --no-dev --no-editable --no-install-project --locked
