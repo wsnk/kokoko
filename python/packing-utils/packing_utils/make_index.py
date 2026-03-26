@@ -53,7 +53,7 @@ def make_index(dist_dir: Path, out_dir: Path):
     packages: dict[str, list[Wheel]] = {}
     for wheel in get_wheels(dist_dir):
         packages.setdefault(wheel.name, []).append(wheel)
-    
+
     dbg("Found %d packages for index", len(packages))
 
     # write top-level index

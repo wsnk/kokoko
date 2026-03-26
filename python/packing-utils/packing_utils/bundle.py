@@ -25,7 +25,7 @@ class Config:
     @property
     def wheels_dir(self) -> Path:
         return self.bundle_dir / "wheels"
-    
+
     @property
     def index_dir(self) -> Path:
         return self.bundle_dir / "index"
