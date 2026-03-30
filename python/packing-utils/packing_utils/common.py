@@ -2,13 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 import logging
 import subprocess
-from unittest import result
 from urllib.parse import urlparse, parse_qs
-import tempfile
-import shutil
 import json
-import re
-from packaging.utils import parse_wheel_filename
+from packaging.utils import parse_wheel_filename, canonicalize_name
 
 
 _log = logging.getLogger(__name__)
@@ -27,8 +23,9 @@ def err(*args, **kwargs):
 
 
 def normalized_name(name: str) -> str:
+    return canonicalize_name(name)
     # see https://packaging.python.org/en/latest/specifications/name-normalization/
-    return re.sub(r"[-_.]+", "-", name).lower()
+    # return re.sub(r"[-_.]+", "-", name).lower()
 
 
 @dataclass
@@ -66,14 +63,14 @@ class LockedPackage:
 class Uv:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
-    
+
     def version(self):
         cmd = ["uv", "version", "--frozen", "--output-format", "json"]
         out = subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True, text=True)
         data = json.loads(out.stdout)
         dbg("Project version info: %s", data)
         return data
-    
+
     def build(self, outdir: Path = None, args: list[str] = None):
         if args is None:
             args = []
@@ -103,7 +100,7 @@ class Git:
     @classmethod
     def is_repository(cls, path: Path) -> bool:
         return (path / ".git").is_dir()
-    
+
     @classmethod
     def get_commit_hash(cls, repo_dir: Path) -> str:
         result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_dir, capture_output=True, text=True)
@@ -149,7 +146,7 @@ class Git:
         """
         # Parse the URL
         parsed = urlparse(url)
-        
+
         # Extract the git URL (without fragment and query)
         git_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
         commit_hash = parsed.fragment
@@ -160,16 +157,16 @@ class Git:
         if parsed.query:
             params = parse_qs(parsed.query)
             if 'subdirectory' in params:
-                subdirectory = params['subdirectory'][0]     
-        
+                subdirectory = params['subdirectory'][0]
+
         # Create destination directory if not provided
         dest_dir.mkdir(parents=True, exist_ok=True)
-        
+
         if cls.is_repository(dest_dir):
             dbg("Repository already exists at '%s', skipping clone.", dest_dir)
         else:
             cls.clone(git_url, dest_dir)
-        
+
         # Checkout specific commit if provided
         if commit_hash:
             if not cls.has_commit(dest_dir, commit_hash):

@@ -34,6 +34,10 @@ class PyProject:
         return self._data
 
     @property
+    def name(self) -> str:
+        return normalized_name(self.data.get("project", {}).get("name", ""))
+
+    @property
     def dependencies(self) -> list[Requirement]:
         deps = self.data.get("project", {}).get("dependencies", [])
         return parse_dependencies(deps)
