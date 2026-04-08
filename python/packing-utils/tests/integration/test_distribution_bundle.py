@@ -1,6 +1,8 @@
 from pathlib import Path
 import pytest
 from .common import run_build_distr_bundle, make_pyproject, run
+from packing_utils.bundle import Config, build_bundle
+import os
 
 
 @pytest.fixture(scope="module")
@@ -41,10 +43,10 @@ def localpkg_dep_2(module_tmpdir) -> Path:
     return proj_dir.resolve()
 
 
-@pytest.fixture(scope="module")
-def localpkg_root(module_tmpdir, localpkg_dep_1, localpkg_dep_2) -> Path:
+@pytest.fixture
+def localpkg_root(tmp_path, localpkg_dep_1, localpkg_dep_2) -> Path:
     proj_dir = make_pyproject(
-        module_tmpdir / "localpkg_root",
+        tmp_path / "localpkg_root",
         "localpkg_root",
         dependencies=[
             "localpkg_dep_1",
@@ -72,10 +74,19 @@ def localpkg_root(module_tmpdir, localpkg_dep_1, localpkg_dep_2) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def setup(tmp_path, monkeypatch):
+def setup(tmp_path, monkeypatch: pytest.MonkeyPatch):
     with monkeypatch.context() as m:
         m.setenv("UV_CACHE_DIR", str(tmp_path / "uv_cache"))
+        m.chdir(tmp_path)
         yield
+
+
+def run_in_venv(venv_dir: Path, cmd: str, cwd=None, env=None):
+    return run(
+        ["bash", "-c", f"source {venv_dir.resolve()}/bin/activate && {cmd}"],
+        cwd=cwd,
+        env=env
+    )
 
 
 def test_cli_build_local_dependency(localpkg_root):
@@ -108,9 +119,32 @@ def test_cli_build_local_dependency(localpkg_root):
         ("python -m localpkg_root", "Hello, root!"),
     ]
     for cmd, expected_output in CMDS:
-        output = run(
-            ["bash", "-c", f"source ./.venv/bin/activate && {cmd}"],
-            cwd=bundle_dir
-        )
+        output = run_in_venv(bundle_dir/".venv", cmd)
         assert output.strip() == expected_output.strip(), \
             f"Command '{cmd}' output did not match expected one"
+
+
+def test_reinstallation_of_bundle(tmp_path: Path, localpkg_root):
+    bundle_dir = tmp_path / "bundle"
+    config = Config(
+        pyproject_dir=localpkg_root,
+        bundle_dir=bundle_dir
+    )
+
+    env = {**os.environ}
+    env.pop("VIRTUAL_ENV", None)
+
+    # 1. build and install first version of the bundle
+    build_bundle(config)
+    run(["./sync.sh"], cwd=bundle_dir, env=env)
+    out = run_in_venv(bundle_dir/".venv", "python -m localpkg_root", env=env)
+    assert out.strip() == "Hello, root!", "Initial installation failed"
+
+    # 2. change the source code of the root package and rebuild the bundle
+    mk_hello_py("root v2", localpkg_root / "localpkg_root.py")
+    build_bundle(config)
+
+    # 3. reinstall the bundle and check that the changes are reflected
+    run(["./sync.sh"], cwd=bundle_dir, env=env)
+    out = run_in_venv(bundle_dir/".venv", "python -m localpkg_root", env=env)
+    assert out.strip() == "Hello, root v2!", "Reinstallation failed"
