@@ -71,6 +71,13 @@ def localpkg_root(module_tmpdir, localpkg_dep_1, localpkg_dep_2) -> Path:
     return proj_dir.resolve()
 
 
+@pytest.fixture(autouse=True)
+def setup(tmp_path, monkeypatch):
+    with monkeypatch.context() as m:
+        m.setenv("UV_CACHE_DIR", str(tmp_path / "uv_cache"))
+        yield
+
+
 def test_cli_build_local_dependency(localpkg_root):
     bundle_dir = localpkg_root / "bundle"
     run_build_distr_bundle(localpkg_root, bundle_dir)
