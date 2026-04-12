@@ -4,6 +4,8 @@ name: Python Style and Unit Tests
 
 on:
     push:
+        branches:
+          - master
         paths:
             - 'python/**'
             - 'scripts/**'
