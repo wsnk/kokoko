@@ -60,6 +60,7 @@ class LockedPackage:
 
 
 
+
 class Uv:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
@@ -103,7 +104,9 @@ class Git:
 
     @classmethod
     def get_commit_hash(cls, repo_dir: Path) -> str:
-        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_dir, capture_output=True, text=True)
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=repo_dir, capture_output=True, text=True
+        )
         if result.returncode != 0:
             _log.error("Failed to get commit hash: %s", result.stderr)
             raise RuntimeError(f"git rev-parse failed with exit code {result.returncode}")
@@ -111,7 +114,9 @@ class Git:
 
     @classmethod
     def has_commit(cls, repo_dir: Path, commit_hash: str) -> bool:
-        result = subprocess.run(["git", "cat-file", "-t", commit_hash], cwd=repo_dir, capture_output=True, text=True)
+        result = subprocess.run(
+            ["git", "cat-file", "-t", commit_hash], cwd=repo_dir, capture_output=True, text=True
+        )
         return result.returncode == 0 and result.stdout.strip() == "commit"
 
     @classmethod
@@ -126,7 +131,9 @@ class Git:
     @classmethod
     def clone(cls, url: str, dest_dir: Path):
         dbg(f"Cloning repository: {url} into '{dest_dir}'")
-        result = subprocess.run(["git", "clone", url, str(dest_dir)], capture_output=True, text=True)
+        result = subprocess.run(
+            ["git", "clone", url, str(dest_dir)], capture_output=True, text=True
+        )
         if result.returncode != 0:
             err(f"Failed to clone repository: {result.stderr}")
             raise RuntimeError(f"git clone failed with exit code {result.returncode}")
@@ -134,16 +141,22 @@ class Git:
     @classmethod
     def checkout(cls, repo_dir: Path, commit_hash: str):
         dbg(f"Checking out commit '{commit_hash}' in repository '{repo_dir}'")
-        result = subprocess.run(["git", "checkout", commit_hash], cwd=repo_dir, capture_output=True, text=True)
+        result = subprocess.run(
+            ["git", "checkout", commit_hash], cwd=repo_dir, capture_output=True, text=True
+        )
         if result.returncode != 0:
             err(f"Failed to checkout commit: {result.stderr}")
             raise RuntimeError(f"git checkout failed with exit code {result.returncode}")
 
     @classmethod
     def ensure_repo(cls, url, dest_dir: Path):
-        """Checks out a git repository from the given URL and returns the path to the checked-out directory.
-        URL is like: 'ssh://git@github.com/org-name/repo-name.git[?subdirectory=path/to/a/dir]#commithash'
+        """ Checks out a git repository from the given URL and returns the path to the directory.
+
+        URL is like:
+        ssh://git@github.com/org-name/repo-name.git[?subdirectory=path/to/a/dir]#commithash
+
         """
+
         # Parse the URL
         parsed = urlparse(url)
 
@@ -173,7 +186,9 @@ class Git:
                 dbg("Commit hash '%s' not found in repository '%s'", commit_hash, git_url)
                 cls.fetch(dest_dir)  # fetch latest changes and check again
                 if not cls.has_commit(dest_dir, commit_hash):
-                    raise ValueError(f"Commit hash '{commit_hash}' not found in repository '{git_url}'")
+                    raise ValueError(
+                        f"Commit hash '{commit_hash}' not found in repository '{git_url}'"
+                    )
             cls.checkout(dest_dir, commit_hash)
 
         # Return the path (or subdirectory path if specified)

@@ -58,8 +58,10 @@ def make_index(dist_dir: Path, out_dir: Path):
 
     # write top-level index
     index_lines = [
-        "<!doctype html>\n<html><head><meta charset='utf-8'><title>Simple Index</title></head><body>\n",
-        "<h1>Simple Index</h1>\n<ul>\n",
+        "<!doctype html>\n",
+        "<html><head><meta charset='utf-8'><title>Simple Index</title></head><body>\n",
+        "<h1>Simple Index</h1>\n",
+        "<ul>\n",
     ]
     for pkg in sorted(packages):
         index_lines.append(f"  <li><a href=\"{quote(pkg)}/\">{pkg}</a></li>\n")
