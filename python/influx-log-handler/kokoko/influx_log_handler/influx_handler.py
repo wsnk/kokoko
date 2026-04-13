@@ -1,7 +1,6 @@
 
 import logging
 from logging.handlers import RotatingFileHandler
-from typing import Any
 
 
 def _format_field_str(val: str) -> str:

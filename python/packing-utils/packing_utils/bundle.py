@@ -61,7 +61,7 @@ export VIRTUAL_ENV="${{VENV_PATH:-"$BUNDLE_DIR/.venv"}}"
 echo "Syncing distribution bundle to '$VIRTUAL_ENV'..." >&2
 
 uv sync --no-dev --no-editable --no-install-project --locked
-uv pip install --no-deps --index '{rel_index_path}' '{pyproject.name}'
+uv pip install --no-deps --reinstall --index '{rel_index_path}' '{pyproject.name}'
 """
 
 

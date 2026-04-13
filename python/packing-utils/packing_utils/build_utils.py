@@ -18,13 +18,19 @@ def _build_wheel(project_dir: Path, config: Config) -> Path:
 
 
 def build_local_dependency(pkg: LockedPackage, config: Config) -> str:
-    dbg("Building local dependency '%s' (version: %s) from source '%s'...", pkg.name, pkg.version, pkg.source)
+    dbg(
+        "Building local dependency '%s' (version: %s) from source '%s'...",
+        pkg.name, pkg.version, pkg.source
+    )
     project_dir = Path(pkg.source["directory"])
     _build_wheel(project_dir, config)
 
 
 def build_git_dependency(pkg: LockedPackage, config: Config) -> str:
-    dbg("Building git dependency '%s' (version: %s) from source '%s'...", pkg.name, pkg.version, pkg.source)
+    dbg(
+        "Building git dependency '%s' (version: %s) from source '%s'...",
+        pkg.name, pkg.version, pkg.source
+    )
     url = pkg.source["git"]
     project_dir = Git.ensure_repo(url, config.build_dir/pkg.name)
     _build_wheel(project_dir, config)
