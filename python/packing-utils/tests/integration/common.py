@@ -48,7 +48,7 @@ def run_build_distr_bundle(project_dir: Path, dist_dir: Path):
         "build-distr-bundle",
         "--pyproject-dir", str(project_dir),
         "--bundle-dir", str(dist_dir)
-    ], capture_output=True, text=True)
+    ], capture_output=False, text=True)
     dbg("CLI stdout:\n%s", result.stdout)
     dbg("CLI stderr:\n%s", result.stderr)
     if result.returncode != 0:

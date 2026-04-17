@@ -1,8 +1,12 @@
-from .common import dbg, Uv, Git, Wheel
-from .uv_utils import LockedPackage
+import subprocess
+from .common import dbg, Wheel
+from .infratools.git import Git
+from .infratools.uv import Uv, LockedPackage, build_wheel, build_many
+from .infratools.proc import ToFile
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterable
+import asyncio
 
 
 @dataclass(kw_only=True)
@@ -13,35 +17,54 @@ class Config:
     build_dir: Path = Path(".build")  # temporary directory for building dependencies
 
 
-def _build_wheel(project_dir: Path, config: Config) -> Path:
-    Uv(project_dir).build(config.dist_dir, ["--wheel"])
+PackageT = LockedPackage | Path
 
 
-def build_local_dependency(pkg: LockedPackage, config: Config) -> str:
-    dbg(
-        "Building local dependency '%s' (version: %s) from source '%s'...",
-        pkg.name, pkg.version, pkg.source
+def _get_package_dir(pkg: PackageT) -> Path:
+    if isinstance(pkg, Path):
+        return pkg
+    return Path(pkg.source["directory"])
+
+
+def _is_local_package(pkg: PackageT) -> bool:
+    if isinstance(pkg, Path):
+        return True
+    return pkg.source and "directory" in pkg.source
+
+
+async def _build_wheel(project_dir: Path, config: Config) -> Path:
+    ver_info = await Uv(project_dir).version()
+    await build_wheel(
+        project_dir,
+        config.dist_dir,
+        output_path=config.build_dir / f"{ver_info.name}-build.log"
     )
-    project_dir = Path(pkg.source["directory"])
-    _build_wheel(project_dir, config)
 
 
-def build_git_dependency(pkg: LockedPackage, config: Config) -> str:
+
+async def build_local_dependency(project_dir: Path, config: Config) -> str:
+    dbg("Building package from directory: '%s'...", project_dir)
+    await _build_wheel(project_dir, config)
+
+
+async def build_git_dependency(pkg: LockedPackage, config: Config) -> str:
     dbg(
         "Building git dependency '%s' (version: %s) from source '%s'...",
         pkg.name, pkg.version, pkg.source
     )
     url = pkg.source["git"]
     project_dir = Git.ensure_repo(url, config.build_dir/pkg.name)
-    _build_wheel(project_dir, config)
+    await _build_wheel(project_dir, config)
 
 
 
-def build_dependency(pkg: LockedPackage, config: Config) -> str:
-    if pkg.source.get("directory"):
-        return build_local_dependency(pkg, config)
+async def build_dependency(pkg: LockedPackage, config: Config) -> str:
+    if "directory" in pkg.source:
+        project_dir = Path(pkg.source["directory"])
+        return await build_local_dependency(project_dir, config)
+
     if pkg.source.get("git"):
-        return build_git_dependency(pkg, config)
+        return await build_git_dependency(pkg, config)
     if pkg.source.get("virtual"):
         dbg("Package '%s' is a virtual dependency, skipping build.", pkg.name)
         return None
@@ -52,9 +75,25 @@ def build_dependency(pkg: LockedPackage, config: Config) -> str:
     raise ValueError(f"Unsupported source type for package '{pkg.name}': {pkg.source}")
 
 
-def build_packages(pkgs: list[LockedPackage], config: Config) -> list[str]:
-    for pkg in pkgs:
-        build_dependency(pkg, config)
+
+
+
+def build_packages(pkgs: list[PackageT], config: Config) -> list[str]:
+    import asyncio
+
+    local_pkgs = [pkg for pkg in pkgs if _is_local_package(pkg)]
+    others = [pkg for pkg in pkgs if not _is_local_package(pkg)]
+
+    asyncio.run(
+        build_many(
+            [_get_package_dir(pkg) for pkg in local_pkgs],
+            config.dist_dir,
+            logs_dir=config.build_dir
+        )
+    )
+
+    for pkg in others:
+        asyncio.run(build_dependency(pkg, config))
 
 
 def get_wheels(dist_dir: Path) -> Iterable[Wheel]:

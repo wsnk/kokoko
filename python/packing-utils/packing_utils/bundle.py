@@ -1,7 +1,7 @@
-from .uv_utils import get_internal_packages
-from .build_utils import build_packages, Config as BuildConfig, get_wheels
+from .build_utils import build_packages, build_local_dependency, Config as BuildConfig, get_wheels
 from .make_index import make_index
-from .common import Uv, dbg, inf
+from .common import dbg, inf
+from .infratools.uv import Uv, get_internal_packages
 from .pyproject_utils import PyProject, parse_dependencies
 import shutil
 from pathlib import Path
@@ -76,8 +76,7 @@ def build_bundle(config: Config):
     internal_packages = get_internal_packages(config.uv_lock)
     inf("Found %d internal packages in '%s'", len(internal_packages), config.uv_lock)
 
-    build_packages(internal_packages, config.build_config)
-    Uv(config.pyproject_dir).build(config.wheels_dir, ["--wheel"])
+    build_packages([config.pyproject_dir, *internal_packages], config.build_config)
 
     # make simple index for local dependencies
     make_index(config.wheels_dir, config.index_dir)
